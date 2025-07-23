@@ -1,0 +1,568 @@
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Manajemen Barang</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        .real-time-badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        
+        .real-time-badge.show {
+            opacity: 1;
+            transform: translateY(-10px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex">
+    <!-- Sidebar Navigation -->
+    <div class="w-64 bg-indigo-800 text-white p-4 flex flex-col min-h-screen">
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4">Inventory Manager</h2>
+            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/76122412-9977-4e02-a9ca-7aeef40e9d38.png" alt="Company logo showing warehouse boxes" class="w-16 h-16 rounded-full border-2 border-white">
+        </div>
+        <nav class="flex-1">
+            <ul class="space-y-2">
+                <li><a href="#" class="block px-4 py-2 bg-indigo-700 rounded-lg">Dashboard</a></li>
+                <li><a href="#inventory" class="block px-4 py-2 hover:bg-indigo-700 rounded-lg">Inventory</a></li>
+                <li><a href="#" class="block px-4 py-2 hover:bg-indigo-700 rounded-lg">Reports</a></li>
+                <li><a href="#" class="block px-4 py-2 hover:bg-indigo-700 rounded-lg">Suppliers</a></li>
+                <li><a href="#" class="block px-4 py-2 hover:bg-indigo-700 rounded-lg">Settings</a></li>
+            </ul>
+        </nav>
+        <div class="mt-auto p-4 bg-indigo-900 rounded-lg">
+            <p class="text-sm">Logged in as <span class="font-semibold">Admin</span></p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto">
+        <div class="container mx-auto px-4 py-8">
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="mb-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-gray-500 mb-2">Total Items</h3>
+                    <p class="text-3xl font-bold text-indigo-600" id="dashboardTotalItems">0</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-gray-500 mb-2">Low Stock</h3>
+                    <p class="text-3xl font-bold text-red-500" id="dashboardLowStock">0</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-gray-500 mb-2">Categories</h3>
+                    <p class="text-3xl font-bold text-green-500" id="dashboardCategories">0</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-gray-500 mb-2">Total Value</h3>
+                    <p class="text-3xl font-bold text-blue-500" id="dashboardTotalValue">$0</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
+                    <div id="recentActivity" class="space-y-3">
+                        <!-- Activity items will be added here -->
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Stock by Category</h3>
+                    <div id="categoryChart">
+                        <!-- Chart will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Section -->
+        <header class="mb-10" id="inventory">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-indigo-700">Manajemen Inventori Barang</h1>
+                    <p class="text-gray-600">Sistem real-time untuk mengelola stok barang</p>
+                </div>
+                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/e500cdce-c9de-47df-ab37-476122d5d927.png" alt="Logo perusahaan berupa kotak dengan simbol inventory di tengah, warna biru gradien dan putih" class="w-16 h-16 rounded-full border-2 border-indigo-200" />
+            </div>
+        </header>
+        
+        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8 fade-in">
+            <div class="p-6 bg-indigo-50 border-b border-indigo-100">
+                <h2 class="text-xl font-semibold text-indigo-800">Tambah Barang Baru</h2>
+                <p class="text-sm text-indigo-600">Isi form untuk menambahkan item ke inventori</p>
+            </div>
+            
+            <form id="itemForm" class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div>
+                        <label for="itemCode" class="block text-sm font-medium text-gray-700 mb-1">Kode Barang</label>
+                        <input type="text" id="itemCode" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                    </div>
+                    
+                    <div>
+                        <label for="itemName" class="block text-sm font-medium text-gray-700 mb-1">Nama Barang</label>
+                        <input type="text" id="itemName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                    </div>
+                    
+                    <div>
+                        <label for="itemCategory" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                        <select id="itemCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="elektronik">Elektronik</option>
+                            <option value="perkakas">Perkakas</option>
+                            <option value="makanan">Makanan</option>
+                            <option value="minuman">Minuman</option>
+                            <option value="lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="itemQuantity" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Stok</label>
+                        <input type="number" id="itemQuantity" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label for="itemDescription" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
+                    <textarea id="itemDescription" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+                
+                <div class="flex justify-end mt-6 space-x-3">
+                    <button type="button" id="resetForm" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        Reset
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Simpan Barang
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-md overflow-hidden fade-in">
+            <div class="p-6 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-semibold text-indigo-800">Daftar Inventori</h2>
+                    <p class="text-sm text-indigo-600">Total data: <span id="totalItems">0</span> barang</p>
+                </div>
+                <div class="relative">
+                    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Cari barang..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Barang</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Data akan ditampilkan di sini -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                <span class="text-sm text-gray-600">Menampilkan <span id="showingItems">0</span> dari <span id="totalItemsFooter">0</span> barang</span>
+                <div class="flex space-x-2">
+                    <button id="prevPage" class="px-3 py-1 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 disabled:opacity-50" disabled>Sebelumnya</button>
+                    <button id="nextPage" class="px-3 py-1 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 disabled:opacity-50" disabled>Selanjutnya</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="realtimeBadge" class="real-time-badge bg-green-500 text-white shadow-lg">
+        Data diperbarui secara real-time
+    </div>
+    
+    <script>
+        // Simulasi database di localStorage
+        const ITEMS_KEY = 'inventory_items';
+        const ITEMS_PER_PAGE = 5;
+        
+        // Data contoh jika belum ada di localStorage
+        const sampleData = [
+            { code: 'EL-001', name: 'Laptop Lenovo', category: 'elektronik', quantity: 15, description: 'Laptop 14 inci core i5' },
+            { code: 'PK-002', name: 'Obeng Set', category: 'perkakas', quantity: 32, description: 'Set obeng berbagai ukuran' },
+            { code: 'MK-003', name: 'Biskuit', category: 'makanan', quantity: 120, description: 'Biskuit rasa coklat' },
+            { code: 'MN-004', name: 'Air Mineral', category: 'minuman', quantity: 90, description: 'Botol 600ml' },
+            { code: 'LN-005', name: 'Kertas A4', category: 'lainnya', quantity: 65, description: 'Pak isi 500 lembar' }
+        ];
+        
+        let currentPage = 1;
+        let currentEditId = null;
+        let allItems = [];
+        let filteredItems = [];
+        
+        // Inisialisasi halaman
+        document.addEventListener('DOMContentLoaded', function() {
+            initData();
+            renderTable();
+            setupEventListeners();
+            
+            // Simulasikan koneksi WebSocket untuk update real-time
+            simulateWebSocket();
+        });
+        
+        function initData() {
+            const storedItems = localStorage.getItem(ITEMS_KEY);
+            
+            if (!storedItems) {
+                localStorage.setItem(ITEMS_KEY, JSON.stringify(sampleData));
+                allItems = [...sampleData];
+            } else {
+                allItems = JSON.parse(storedItems);
+            }
+            
+            filteredItems = [...allItems];
+            updateDashboard();
+        }
+        
+        function renderTable(filteredData = filteredItems) {
+            const tableBody = document.getElementById('itemTableBody');
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const paginatedItems = filteredData.slice(startIndex, endIndex);
+            
+            tableBody.innerHTML = '';
+            
+            paginatedItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition-colors';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.code}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            ${getCategoryColorClass(item.category)}">
+                            ${formatCategory(item.category)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.quantity}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${item.description}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button class="text-indigo-600 hover:text-indigo-900 edit-btn mr-3" data-id="${item.code}">Edit</button>
+                        <button class="text-red-600 hover:text-red-900 delete-btn" data-id="${item.code}">Hapus</button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Update informasi pagination
+            document.getElementById('totalItems').textContent = filteredData.length;
+            document.getElementById('totalItemsFooter').textContent = filteredData.length;
+            document.getElementById('showingItems').textContent = paginatedItems.length;
+            
+            // Enable/disable tombol pagination
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = endIndex >= filteredData.length;
+            
+            // Tambahkan event listener untuk tombol edit dan hapus
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', handleEdit);
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', handleDelete);
+            });
+        }
+        
+        function setupEventListeners() {
+            // Form submission
+            document.getElementById('itemForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const code = document.getElementById('itemCode').value;
+                const name = document.getElementById('itemName').value;
+                const category = document.getElementById('itemCategory').value;
+                const quantity = parseInt(document.getElementById('itemQuantity').value);
+                const description = document.getElementById('itemDescription').value;
+                
+                // Validasi input
+                if (!code || !name || isNaN(quantity) || quantity < 0) {
+                    alert('Harap isi semua field dengan benar!');
+                    return;
+                }
+                
+                const item = { code, name, category, quantity, description };
+                
+                if (currentEditId) {
+                    // Update existing item
+                    const index = allItems.findIndex(i => i.code === currentEditId);
+                    if (index !== -1) {
+                        allItems[index] = item;
+                        showRealtimeUpdate(`${name} diperbarui`);
+                    }
+                } else {
+                    // Add new item
+                    const existingItem = allItems.find(i => i.code === code);
+                    if (existingItem) {
+                        alert('Kode barang sudah ada!');
+                        return;
+                    }
+                    
+                    allItems.push(item);
+                    showRealtimeUpdate(`${name} ditambahkan`);
+                }
+                
+                // Save to localStorage
+                localStorage.setItem(ITEMS_KEY, JSON.stringify(allItems));
+                
+                // Update filtered items
+                filterItems();
+                
+                // Reset form
+                resetForm();
+                renderTable();
+            });
+            
+            // Reset form button
+            document.getElementById('resetForm').addEventListener('click', resetForm);
+            
+            // Search functionality
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                filterItems(e.target.value);
+                currentPage = 1;
+                renderTable();
+            });
+            
+            // Pagination buttons
+            document.getElementById('prevPage').addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                }
+            });
+            
+            document.getElementById('nextPage').addEventListener('click', function() {
+                const totalItems = filteredItems.length;
+                const lastPage = Math.ceil(totalItems / ITEMS_PER_PAGE);
+                
+                if (currentPage < lastPage) {
+                    currentPage++;
+                    renderTable();
+                }
+            });
+        }
+        
+        function handleEdit(e) {
+            const itemCode = e.target.getAttribute('data-id');
+            const item = allItems.find(i => i.code === itemCode);
+            
+            if (item) {
+                document.getElementById('itemCode').value = item.code;
+                document.getElementById('itemName').value = item.name;
+                document.getElementById('itemCategory').value = item.category;
+                document.getElementById('itemQuantity').value = item.quantity;
+                document.getElementById('itemDescription').value = item.description;
+                
+                currentEditId = item.code;
+                
+                // Scroll to form
+                document.getElementById('itemForm').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        
+        function handleDelete(e) {
+            if (confirm('Apakah Anda yakin ingin menghapus barang ini?')) {
+                const itemCode = e.target.getAttribute('data-id');
+                const itemIndex = allItems.findIndex(i => i.code === itemCode);
+                
+                if (itemIndex !== -1) {
+                    const itemName = allItems[itemIndex].name;
+                    allItems.splice(itemIndex, 1);
+                    
+                    showRealtimeUpdate(`${itemName} dihapus`);
+                    
+                    localStorage.setItem(ITEMS_KEY, JSON.stringify(allItems));
+                    
+                    // Reset current page if last item on page was deleted
+                    const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+                    if (currentPage > totalPages && totalPages > 0) {
+                        currentPage = totalPages;
+                    } else if (totalPages === 0) {
+                        currentPage = 1;
+                    }
+                    
+                    filterItems();
+                    renderTable();
+                }
+            }
+        }
+        
+        function resetForm() {
+            document.getElementById('itemForm').reset();
+            currentEditId = null;
+        }
+        
+        function filterItems(searchTerm = '') {
+            if (!searchTerm) {
+                filteredItems = [...allItems];
+                return;
+            }
+            
+            const term = searchTerm.toLowerCase();
+            filteredItems = allItems.filter(item => 
+                item.code.toLowerCase().includes(term) ||
+                item.name.toLowerCase().includes(term) ||
+                item.category.toLowerCase().includes(term) ||
+                item.description.toLowerCase().includes(term)
+            );
+        }
+        
+        function getCategoryColorClass(category) {
+            switch (category) {
+                case 'elektronik': return 'bg-blue-100 text-blue-800';
+                case 'perkakas': return 'bg-purple-100 text-purple-800';
+                case 'makanan': return 'bg-green-100 text-green-800';
+                case 'minuman': return 'bg-yellow-100 text-yellow-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+        
+        // Update dashboard stats
+        function updateDashboard() {
+            document.getElementById('dashboardTotalItems').textContent = allItems.length;
+            
+            const lowStockItems = allItems.filter(item => item.quantity < 10).length;
+            document.getElementById('dashboardLowStock').textContent = lowStockItems;
+            
+            const categories = [...new Set(allItems.map(item => item.category))];
+            document.getElementById('dashboardCategories').textContent = categories.length;
+            
+            // Calculate total inventory value (using dummy values for demo)
+            const totalValue = allItems.reduce((sum, item) => sum + (item.quantity * (Math.random() * 100 + 10)), 0);
+            document.getElementById('dashboardTotalValue').textContent = `${totalValue.toFixed(2)}`;
+            
+            // Update recent activity
+            updateRecentActivity();
+        }
+        
+        function updateRecentActivity() {
+            const activityContainer = document.getElementById('recentActivity');
+            
+            // Only keep last 5 activities
+            const recentActivities = allItems
+                .slice(-5)
+                .reverse()
+                .map(item => `
+                    <div class="flex items-center space-x-3 border-b pb-2">
+                        <div class="text-sm text-gray-500 flex-1">${item.name}</div>
+                        <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${item.quantity} stock</span>
+                    </div>
+                `);
+                
+            activityContainer.innerHTML = recentActivities.join('');
+        }
+        
+        function formatCategory(category) {
+            return category.charAt(0).toUpperCase() + category.slice(1);
+        }
+        
+        function showRealtimeUpdate(message) {
+            const badge = document.getElementById('realtimeBadge');
+            badge.textContent = message;
+            badge.classList.add('show');
+            
+            setTimeout(() => {
+                badge.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Simulasi WebSocket connection untuk update real-time
+        function simulateWebSocket() {
+            // Dalam implementasi nyata, ini akan diganti dengan WebSocket sebenarnya
+            setInterval(() => {
+                // 10% chance to simulate a real-time update
+                if (Math.random() < 0.1) {
+                    const actions = ['add', 'update', 'delete'];
+                    const action = actions[Math.floor(Math.random() * actions.length)];
+                    const itemIndex = Math.floor(Math.random() * allItems.length);
+                    
+                    if (action === 'add' || allItems.length === 0) {
+                        // Add new item
+                        const newItem = generateRandomItem();
+                        allItems.push(newItem);
+                        localStorage.setItem(ITEMS_KEY, JSON.stringify(allItems));
+                        showRealtimeUpdate(`${newItem.name} ditambahkan`);
+                    } else if (action === 'update') {
+                        // Update existing item
+                        const quantityChange = Math.floor(Math.random() * 10) - 3; // -3 to +6
+                        allItems[itemIndex].quantity = Math.max(0, allItems[itemIndex].quantity + quantityChange);
+                        localStorage.setItem(ITEMS_KEY, JSON.stringify(allItems));
+                        
+                        const changeText = quantityChange >= 0 ? 
+                            `ditambah ${quantityChange}` : `dikurangi ${Math.abs(quantityChange)}`;
+                        showRealtimeUpdate(`${allItems[itemIndex].name} stok ${changeText}`);
+                    } else {
+                        // Delete item
+                        const deletedItem = allItems.splice(itemIndex, 1)[0];
+                        localStorage.setItem(ITEMS_KEY, JSON.stringify(allItems));
+                        showRealtimeUpdate(`${deletedItem.name} dihapus`);
+                    }
+                    
+                    filterItems(document.getElementById('searchInput').value);
+                    renderTable();
+                    updateDashboard();
+                }
+            }, 5000);
+        }
+        
+        function generateRandomItem() {
+            const categories = ['elektronik', 'perkakas', 'makanan', 'minuman', 'lainnya'];
+            const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+            
+            const itemsByCategory = {
+                elektronik: ['Laptop', 'Smartphone', 'Tablet', 'Keyboard', 'Mouse'],
+                perkakas: ['Palu', 'Tang', 'Gergaji', 'Bor', 'Obeng'],
+                makanan: ['Biskuit', 'Coklat', 'Keripik', 'Roti', 'Kue'],
+                minuman: ['Air Mineral', 'Jus', 'Soda', 'Susu', 'Teh'],
+                lainnya: ['Buku', 'Pensil', 'Penghapus', 'Kertas', 'Pulpen']
+            };
+            
+            const randomName = itemsByCategory[randomCategory][Math.floor(Math.random() * itemsByCategory[randomCategory].length)];
+            const randomQuantity = Math.floor(Math.random() * 100) + 1;
+            const randomCode = `${randomCategory.substring(0, 2).toUpperCase()}-${Math.floor(Math.random() * 900) + 100}`;
+            
+            return {
+                code: randomCode,
+                name: randomName,
+                category: randomCategory,
+                quantity: randomQuantity,
+                description: `Deskripsi contoh untuk ${randomName} kategori ${randomCategory}`
+            };
+        }
+    </script>
+</body>
+</html>
+```
